@@ -1,19 +1,7 @@
 from flask import request, jsonify
-import firebase_admin
-from firebase_admin import credentials, firestore
-from dotenv import load_dotenv
-import os
+from firebase_admin import firestore
+from src.db import db
 
-# Initialize Firebase (only once)
-if not firebase_admin._apps:
-    load_dotenv()
-    firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
-    if not firebase_credentials_path or not os.path.exists(firebase_credentials_path):
-        raise ValueError('Firebase credentials path is invalid or not found')
-    cred = credentials.Certificate(firebase_credentials_path)
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
 
 def save_job():
     try:
