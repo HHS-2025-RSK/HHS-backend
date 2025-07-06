@@ -45,6 +45,7 @@ def get_jobs():
         # Get user_id from query parameters
         user_id = request.args.get('user_id')
         if not user_id:
+            print("No user_id provided in query parameters")
             return jsonify({'error': 'user_id is required'}), 400
 
         # Log the user_id for debugging
@@ -66,23 +67,34 @@ def get_jobs():
             print(f"Unauthorized access: Expected role 'Hotel', found '{user_role}'")
             return jsonify({'error': 'Unauthorized: Only hotel owners can view jobs'}), 403
 
+        # Initialize query for PostedJobs
+        query = db.collection('hhs_app_data').document('users').collection('Hotel').document(user_id).collection('PostedJobs')
+        
+        # Log the query path manually
+        query_path = f"hhs_app_data/users/Hotel/{user_id}/PostedJobs"
+        print(f"Querying jobs at path: {query_path}")
+
         # Get query parameters for filtering
         location = request.args.get('location')
         job_type = request.args.get('job_type')
-        status = request.args.get('status', 'open')
+        status = request.args.get('status')  # No default filter
 
-        # Query jobs from the updated Firestore path
-        query = db.collection('hhs_app_data').document('users').collection('Hotel').document(user_id).collection('PostedJobs').where('status', '==', status)
-
-        # Apply filters if provided
+        # Apply filters only if provided
+        if status:
+            query = query.where('status', '==', status)
+            print(f"Applying status filter: {status}")
         if location:
             query = query.where('location', '==', location)
+            print(f"Applying location filter: {location}")
         if job_type:
             query = query.where('job_type', '==', job_type)
+            print(f"Applying job_type filter: {job_type}")
 
+        # Execute query and fetch jobs
         jobs = query.stream()
         job_list = [{'id': job.id, **job.to_dict()} for job in jobs]
-        print(f"Retrieved {len(job_list)} jobs for user {user_id}")
+        print(f"Retrieved {len(job_list)} jobs for user {user_id}: {job_list}")
+        
         return jsonify(job_list), 200
 
     except Exception as e:

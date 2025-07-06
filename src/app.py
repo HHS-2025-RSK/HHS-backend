@@ -16,6 +16,9 @@ from .jobseeker.jobs.applyjob import apply_job
 from .jobseeker.jobs.savedjobs import save_job
 from .jobseeker.jobs.get_saved_jobs import get_saved_jobs
 
+from .common.getalljobs import get_all_hotels_jobs
+
+
 
 # --- 2. Create the Flask App ---
 app = Flask(__name__)
@@ -37,6 +40,10 @@ app.route('/jobseeker/getprofile', methods=['GET'])(get_jobseeker_profile)
 app.route('/jobseeker/apply-job', methods=['POST'])(apply_job)
 app.route('/jobseeker/save-job', methods=['POST'])(save_job)
 app.route('/jobseeker/saved-jobs', methods=['GET'])(get_saved_jobs)
+
+
+#Common APIs
+app.route('/get_all_hotels_jobs', methods=['GET'])(get_all_hotels_jobs)
 
 
 # --- 4. Run the App ---
