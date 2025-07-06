@@ -32,8 +32,8 @@ app.route('/hotel/job-applicants', methods=['GET'])(get_applied_jobseekers)
 app.route('/hotel/job-applicants/application-status', methods=['POST'])(update_application_status)
 
 # Jobseeker APIs
-app.route('/jobseeker/createprofile/<user_id>', methods=['POST'])(create_or_update_jobseeker_profile)
-app.route('/jobseeker/getprofile/<user_id>', methods=['GET'])(get_jobseeker_profile)
+app.route('/jobseeker/createprofile', methods=['POST'])(create_or_update_jobseeker_profile)
+app.route('/jobseeker/getprofile', methods=['GET'])(get_jobseeker_profile)
 app.route('/jobseeker/apply-job', methods=['POST'])(apply_job)
 app.route('/jobseeker/save-job', methods=['POST'])(save_job)
 app.route('/jobseeker/saved-jobs', methods=['GET'])(get_saved_jobs)
