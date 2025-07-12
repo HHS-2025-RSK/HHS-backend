@@ -15,6 +15,14 @@ from .jobseeker.profile.getprofile import get_jobseeker_profile
 from .jobseeker.jobs.applyjob import apply_job
 from .jobseeker.jobs.savedjobs import save_job
 from .jobseeker.jobs.get_saved_jobs import get_saved_jobs
+from .jobseeker.jobs.getappliedjobs import get_applied_jobs
+from .jobseeker.broker.connect_to_broker import link_seeker_to_broker
+
+from .broker.profile.profilesetup_update import create_or_update_broker_profile
+from .broker.profile.get_profile import get_broker_profile
+from .broker.job_seekers.get_jobseekers import get_broker_job_seekers
+from .broker.uni_code.uni_code import generate_broker_code
+from .broker.uni_code.get_code import get_broker_code
 
 from .common.getalljobs import get_all_hotels_jobs
 
@@ -40,8 +48,16 @@ app.route('/jobseeker/getprofile', methods=['GET'])(get_jobseeker_profile)
 app.route('/jobseeker/apply-job', methods=['POST'])(apply_job)
 app.route('/jobseeker/save-job', methods=['POST'])(save_job)
 app.route('/jobseeker/saved-jobs', methods=['GET'])(get_saved_jobs)
+app.route('/jobseeker/applied-jobs', methods=['GET'])(get_applied_jobs)
+app.route('/jobseeker/connect-to-broker', methods=['POST'])(link_seeker_to_broker)
 
 
+#Broker APIs
+app.route('/broker/broker-profile', methods=['POST'])(create_or_update_broker_profile)
+app.route('/broker/get-broker-profile', methods=['GET'])(get_broker_profile)
+app.route('/broker/job-seekers', methods=['GET'])(get_broker_job_seekers)
+app.route('/broker/create-code', methods=['POST'])(generate_broker_code)
+app.route('/broker/get-code', methods=['GET'])(get_broker_code)
 #Common APIs
 app.route('/get_all_hotels_jobs', methods=['GET'])(get_all_hotels_jobs)
 
