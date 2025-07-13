@@ -13,21 +13,31 @@ def get_all_hotels_jobs():
         # Log the user_id for debugging
         print(f"Attempting to fetch user with ID: {user_id}")
 
-        # Verify user is a Job Seeker
-        user_ref = db.collection('hhs_app').document('users').collection('Job Seeker').document(user_id)
-        user = user_ref.get()
+        # === MODIFICATION 1: Find user in EITHER 'Job Seeker' or 'Broker' collection ===
+        user_doc = None
+        # We will check both collections to find the user
+        for collection_name in ['Job Seeker', 'Broker']:
+            user_ref = db.collection('hhs_app').document('users').collection(collection_name).document(user_id)
+            user = user_ref.get()
+            if user.exists:
+                user_doc = user  # User was found, save the document
+                print(f"User found in collection: {collection_name}")
+                break # Stop searching
         
-        if not user.exists:
-            print(f"User with ID {user_id} does not exist")
+        # The original check, but now using 'user_doc' which we searched for
+        if not user_doc:
+            print(f"User with ID {user_id} does not exist in Job Seeker or Broker collections")
             return jsonify({'error': 'User not found'}), 404
         
-        user_data = user.to_dict()
+        user_data = user_doc.to_dict()
         user_role = user_data.get('role')
         print(f"User role for {user_id}: {user_role}")
         
-        if user_role != 'Job Seeker':
-            print(f"Unauthorized access: Expected role 'Job Seeker', found '{user_role}'")
-            return jsonify({'error': 'Unauthorized: Only job seekers can view jobs'}), 403
+        # === MODIFICATION 2: Authorize EITHER 'Job Seeker' or 'Broker' role ===
+        allowed_roles = ['Job Seeker', 'Broker']
+        if user_role not in allowed_roles:
+            print(f"Unauthorized access: Expected roles {allowed_roles}, found '{user_role}'")
+            return jsonify({'error': 'Unauthorized: Only job seekers and brokers can view jobs'}), 403
 
         # Get query parameters for filtering
         location = request.args.get('location')
@@ -67,7 +77,7 @@ def get_all_hotels_jobs():
         
         print(f"Found {jobs_found} jobs across all hotels")
 
-        # Try alternative collection names if no jobs found
+        # --- THIS IS YOUR ORIGINAL FALLBACK LOGIC, IT IS PRESERVED ---
         if not job_list:
             print("No jobs found, trying alternative collection names")
             for alt_collection in ['hotel', 'HOTEL']:
