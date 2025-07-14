@@ -9,6 +9,8 @@ from .hotel.jobs.get_jobs import get_jobs
 from .hotel.jobs.update_job import update_job
 from .hotel.jobs.get_appliedjobseekers import get_applied_jobseekers
 from .hotel.jobs.update_application_status import update_application_status
+from .hotel.profile.create_or_update_profile import create_or_update_hotel_profile
+from .hotel.profile.get_hotel_profile import get_hotel_profile
 
 from .jobseeker.profile.profilesetup_update import create_or_update_jobseeker_profile
 from .jobseeker.profile.getprofile import get_jobseeker_profile
@@ -41,6 +43,8 @@ app.route('/getjobs', methods=['GET'])(get_jobs)
 app.route('/editjob/<job_id>', methods=['PUT'])(update_job)
 app.route('/hotel/job-applicants', methods=['GET'])(get_applied_jobseekers)
 app.route('/hotel/job-applicants/application-status', methods=['POST'])(update_application_status)
+app.route('/hotel/create-or-update-profile', methods=['POST'])(create_or_update_hotel_profile)
+app.route('/hotel/get-profile', methods=['GET'])(get_hotel_profile)
 
 # Jobseeker APIs
 app.route('/jobseeker/createprofile', methods=['POST'])(create_or_update_jobseeker_profile)
