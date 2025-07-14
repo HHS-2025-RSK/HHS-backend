@@ -5,8 +5,8 @@ from src.db import db # Assuming 'db' is your initialized Firestore client
 
 def get_hotel_profile():
     """
-    Retrieves a combined hotel profile by fetching and merging data from
-    the user authentication collection and the detailed profile collection.
+    Retrieves a hotel's profile, separating credential data from
+    the detailed profile information.
     """
     try:
         # --- 1. Get and Validate user_id ---
@@ -14,15 +14,15 @@ def get_hotel_profile():
         if not user_id:
             return jsonify({'error': 'user_id is required as a query parameter'}), 400
 
-        # --- 2. Fetch Base User Data ---
+        # --- 2. Fetch Credentials Data ---
         # This data is the primary source of truth for auth-related fields.
-        base_user_ref = db.collection('hhs_app').document('users').collection('Hotel').document(user_id)
-        base_user_doc = base_user_ref.get()
+        credentials_ref = db.collection('hhs_app').document('users').collection('Hotel').document(user_id)
+        credentials_doc = credentials_ref.get()
 
-        if not base_user_doc.exists:
+        if not credentials_doc.exists:
             return jsonify({'error': 'Hotel user not found'}), 404
 
-        base_user_data = base_user_doc.to_dict()
+        credentials_data = credentials_doc.to_dict()
 
         # --- 3. Fetch Detailed Profile Data ---
         profile_ref = db.collection('hhs_app_data').document('users').collection('Hotel').document(user_id).collection('profile').document('data')
@@ -30,23 +30,28 @@ def get_hotel_profile():
         
         profile_data = profile_doc.to_dict() if profile_doc.exists else {}
 
-        # --- 4. Combine the Data ---
-        # Start with the detailed profile, then overwrite with base data
-        # to ensure core fields (email, phone, etc.) are from the auth source.
-        combined_data = {**profile_data, **base_user_data}
-
-        # --- 5. Sanitize Timestamps for JSON Response ---
-        for key, value in combined_data.items():
+        # --- 4. Sanitize Timestamps for JSON Response ---
+        for key, value in credentials_data.items():
             if isinstance(value, datetime.datetime):
-                combined_data[key] = value.isoformat()
+                credentials_data[key] = value.isoformat()
+        
+        for key, value in profile_data.items():
+            if isinstance(value, datetime.datetime):
+                profile_data[key] = value.isoformat()
+
+        # --- 5. Structure the Response Data ---
+        # Separate the data from the two paths into distinct objects.
+        response_data = {
+            'credentials_data': credentials_data,
+            'profile_data': profile_data
+        }
 
         return jsonify({
             'message': 'Hotel profile retrieved successfully',
             'user_id': user_id,
-            'data': combined_data
+            'data': response_data
         }), 200
 
     except Exception as e:
         print(f"An error occurred in get_hotel_profile: {e}")
         return jsonify({'error': 'An internal server error occurred'}), 500
-
