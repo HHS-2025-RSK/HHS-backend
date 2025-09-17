@@ -199,24 +199,28 @@
 #         return jsonify({'error': 'An internal server error occurred'}), 500
 
 # MODIFIED: Add these new imports at the top of your file
+# NEW: Add these two imports at the top of your file
+# Add these imports at the top of your Python file
+
+
+
+from werkzeug.utils import secure_filename
+import os
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
-import os
-
 from flask import request, jsonify
 from firebase_admin import firestore
 import datetime
 from src.db import db
 
-# MODIFIED: Load environment variables and configure Cloudinary
+# Load environment variables and configure Cloudinary
 load_dotenv()
-cloudinary.config(secure=True) # This automatically reads the CLOUDINARY_URL from your .env file
+cloudinary.config(secure=True)
 
 def create_or_update_jobseeker_profile():
     try:
-        # MODIFIED: The request is no longer JSON. It's multipart/form-data.
-        # We access text fields from `request.form` and files from `request.files`.
+        # We are expecting multipart/form-data, NOT JSON
         data = request.form
         if not data:
             return jsonify({'error': 'Request form data is missing'}), 400
@@ -225,7 +229,7 @@ def create_or_update_jobseeker_profile():
         if not user_id:
             return jsonify({'error': 'user_id is required'}), 400
 
-        # Verify user is a job seeker (this part is the same and is good)
+        # Verify user is a job seeker
         user_ref = db.collection('hhs_app').document('users').collection('Job Seeker').document(user_id)
         user = user_ref.get()
         if not user.exists:
@@ -234,73 +238,68 @@ def create_or_update_jobseeker_profile():
         if user_data.get('role') != 'Job Seeker':
             return jsonify({'error': 'Unauthorized: Only job seekers can create a profile'}), 403
 
-        # NEW: Handle the file upload to Cloudinary
+        # Handle file upload to Cloudinary
         resume_url = None
+        profile_ref = db.collection('hhs_app_data').document('users').collection('Job Seeker').document(user_id).collection('profile').document('data')
+        
         if 'resume_file' in request.files:
             resume_file = request.files['resume_file']
-            
-            # Upload to Cloudinary in a folder named 'resumes'
-            upload_result = cloudinary.uploader.upload(
-                resume_file,
-                folder="resumes",
-                resource_type="raw" # Use "raw" for PDFs/DOCX files
-            )
-            # Get the secure URL of the uploaded file
-            resume_url = upload_result.get('secure_url')
+            if resume_file and resume_file.filename != '':
+                filename = secure_filename(resume_file.filename)
+                upload_result = cloudinary.uploader.upload(
+                    resume_file,
+                    folder="resumes",
+                    resource_type="raw",
+                    public_id=filename,
+                    overwrite=True
+                )
+                resume_url = upload_result.get('secure_url')
+        else:
+            existing_profile = profile_ref.get()
+            if existing_profile.exists:
+                resume_url = existing_profile.to_dict().get('resume_url')
 
-        # MODIFIED: Build the profile_data object based on the NEW frontend fields
+        # Build the profile_data object from form fields
         profile_data = {
-            # Copy basic user data from your existing user record
             'email': user_data.get('email'),
             'fullName': user_data.get('fullName'),
             'isEmailVerified': user_data.get('isEmailVerified'),
             'phone': user_data.get('phone'),
             'role': user_data.get('role'),
             'uid': user_data.get('uid'),
-
-            # Get new data from the form
             'first_name': data.get('First name'),
             'last_name': data.get('Last name'),
             'headline': data.get('headline'),
-            'location': data.get('location'), # This is the display string (e.g., "City, Country")
-            'location_latitude': data.get('latitude'), # Storing the coordinates
+            'location': data.get('location'),
+            'state': data.get('state'),
+            'employment_status': data.get('employment_status'),
+            'location_latitude': data.get('latitude'),
             'location_longitude': data.get('longitude'),
             'linkedin_profile': data.get('linkedin_profile'),
-            'portfolio': data.get('portfolio'), # Optional
-            'experience_years': int(data.get('experience_years', 0)), # Convert to integer
+            'portfolio': data.get('portfolio'),
+            'experience_years': int(data.get('experience_years', 0)),
             'availability': data.get('availability'),
             'qualifications': data.get('Qualifications'),
             'college_name': data.get('College Name'),
-            'year_of_passout': int(data.get('year_of_passout', 0)), # Convert to integer
+            'year_of_passout': int(data.get('year_of_passout', 0)),
             'grade': data.get('Grade'),
-            
-            # MODIFIED: Handle arrays from form data
-            # Multi-select fields are sent as comma-separated strings. We split them into lists.
             'skills': [skill.strip() for skill in data.get('skills', '').split(',') if skill.strip()],
             'languages': [lang.strip() for lang in data.get('languages', '').split(',') if lang.strip()],
-            
-            'certifications': data.get('certifications'), # Optional
-            
-            # Use the URL from Cloudinary if a file was uploaded
+            'certifications': [cert.strip() for cert in data.get('certifications', '').split(',') if cert.strip()],
             'resume_url': resume_url, 
-            
-            'created_at': firestore.SERVER_TIMESTAMP,
             'updated_at': firestore.SERVER_TIMESTAMP
         }
 
-        # Store or update profile in Firestore (this part is the same)
-        profile_ref = db.collection('hhs_app_data').document('users').collection('Job Seeker').document(user_id).collection('profile').document('data')
-        
+        # Store or update profile
         if profile_ref.get().exists:
-            print(f"Updating existing profile for user {user_id}")
             profile_ref.update(profile_data)
             message = 'Job seeker profile updated successfully'
         else:
-            print(f"Creating new profile for user {user_id}")
+            profile_data['created_at'] = firestore.SERVER_TIMESTAMP
             profile_ref.set(profile_data)
             message = 'Job seeker profile created successfully'
 
-        # Fetch and return the updated data (this part is the same)
+        # Fetch and return the updated data
         updated_profile = profile_ref.get().to_dict()
         for key, value in updated_profile.items():
             if isinstance(value, datetime.datetime):

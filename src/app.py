@@ -19,6 +19,7 @@ from .jobseeker.jobs.savedjobs import save_job
 from .jobseeker.jobs.get_saved_jobs import get_saved_jobs
 from .jobseeker.jobs.getappliedjobs import get_applied_jobs
 from .jobseeker.broker.connect_to_broker import link_seeker_to_broker
+from .jobseeker.profile.uploadresume import upload_resume
 
 from .broker.profile.profilesetup_update import create_or_update_broker_profile
 from .broker.profile.get_profile import get_broker_profile
@@ -54,6 +55,7 @@ app.route('/jobseeker/save-job', methods=['POST'])(save_job)
 app.route('/jobseeker/saved-jobs', methods=['GET'])(get_saved_jobs)
 app.route('/jobseeker/applied-jobs', methods=['GET'])(get_applied_jobs)
 app.route('/jobseeker/connect-to-broker', methods=['POST'])(link_seeker_to_broker)
+app.route('/jobseeker/upload-resume', methods=['POST'])(upload_resume)
 
 
 #Broker APIs
